@@ -3,7 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import logging
 import asyncio
-from yt_chat_rag_using_langchain import get_transcript, process_youtube_video
+# Import both the get_transcript function and process_youtube_video from yt_chat_rag_using_langchain
+from yt_chat_rag_using_langchain import process_youtube_video
+from transcript_helper import get_transcript  # Now imported from new helper file
 import uvicorn
 import time
 

@@ -5,7 +5,6 @@ import os
 import logging
 from langdetect import detect
 from deep_translator import GoogleTranslator
-from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
@@ -17,7 +16,7 @@ import string
 import nltk
 import time
 from rate_limited_llm import get_llm
-
+from transcript_helper import get_transcript
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,26 +27,6 @@ embedding = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L
 
 nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
-
-def get_transcript(video_id):
-    """Get transcript for a YouTube video"""
-    try:
-        
-        transcript_list = YouTubeTranscriptApi.get_transcript(
-            video_id, 
-            languages=["en","hi","sk","pa","en-GB","en-US","en-CA","en-AU","en-IN","en-NZ","en-IE","en-ZA","en-PH","en-MY","en-SG"]
-        )
-
-        
-        transcript = " ".join(chunk["text"] for chunk in transcript_list)
-        return transcript
-
-    except TranscriptsDisabled:
-        logger.error("No captions available for this video.")
-        return "No captions available for this video."
-    except Exception as e:
-        logger.error(f"Error getting transcript: {str(e)}")
-        return f"Error getting transcript: {str(e)}"
 
 def process_transcript(transcript_text):
     """Clean and translate transcript if needed"""
