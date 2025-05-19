@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+pydantic
+flask-cors
+youtube-transcript-api
+langchain-community
+langchain-core
+tiktoken
+faiss-cpu              
+python-dotenv
+langchain_groq
+langchain-huggingface
+transformers
+huggingface-hub
+langdetect
+deep-translator
+nltk

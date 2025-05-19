@@ -1,0 +1,26 @@
+@"
+# Python
+.env
+backend/.env
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Docker
+.dockerignore
+docker-compose.yml
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Security
+*.key
+*.pem
+"@ | Out-File -Encoding utf8 .gitignore

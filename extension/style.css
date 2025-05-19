@@ -1,0 +1,235 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500&display=swap');
+
+#tubemate-chat {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 360px;
+  max-height: 80vh;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  z-index: 1000000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: 'Outfit', sans-serif;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+#tubemate-header {
+  background: linear-gradient(90deg, rgba(26,26,46,0.8) 0%, rgba(22,33,62,0.8) 100%);
+  padding: 12px 16px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #00FFBB;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(54, 209, 220, 0.2);
+  text-shadow: 0 0 10px rgba(0, 255, 187, 0.5);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #00FFBB, #3A86FF);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 255, 187, 0.4);
+}
+
+.logo-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: #ffffff;
+}
+
+.close-button {
+  width: 30px;
+  height: 30px;
+  position: relative;
+  border-radius: 50%;
+  background: rgba(255, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: rgba(255, 0, 0, 0.4);
+}
+
+.close-button::before,
+.close-button::after {
+  content: '';
+  position: absolute;
+  width: 15px;
+  height: 2px;
+  background: #FF3333;
+  border-radius: 1px;
+}
+
+.close-button::before {
+  transform: rotate(45deg);
+}
+
+.close-button::after {
+  transform: rotate(-45deg);
+}
+
+#tubemate-chat .messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.message {
+  padding: 10px 15px;
+  border-radius: 12px;
+  max-width: 80%;
+  word-wrap: break-word;
+  font-size: 16px;
+  line-height: 1.4;
+  margin: 4px 0;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.message.user {
+  align-self: flex-end;
+  background: linear-gradient(90deg, rgba(42,42,58,0.4) 0%, rgba(22,33,62,0.4) 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(58, 134, 255, 0.3);
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+}
+
+.message.assistant {
+  align-self: flex-start;
+  background: linear-gradient(90deg, rgba(54,209,220,0.4) 0%, rgba(91,134,229,0.4) 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(54, 209, 220, 0.3);
+  font-weight: 600;
+}
+
+#tubemate-chat .input-container {
+  display: flex;
+  padding: 16px;
+  gap: 10px;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#tubemate-chat input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(54, 209, 220, 0.4);
+  border-radius: 20px;
+  color: #fff;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+#tubemate-chat input:focus {
+  border-color: rgba(54, 209, 220, 0.8);
+  box-shadow: 0 0 10px rgba(54, 209, 220, 0.3);
+}
+
+#tubemate-chat input::placeholder {
+  color: rgba(140, 158, 255, 0.7);
+  animation: pulse 3s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 0.3; }
+  100% { opacity: 0.7; }
+}
+
+#tubemate-chat button {
+  min-width: 48px;
+  min-height: 48px;
+  background: linear-gradient(135deg, #00FFBB 0%, #3A86FF 100%);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(0, 255, 187, 0.4);
+  transition: all 0.3s ease;
+}
+
+#tubemate-chat button:hover {
+  transform: scale(1.1);
+}
+
+#tubemate-chat button::after {
+  content: '➤';
+  font-size: 20px;
+}
+
+/* Spinner */
+.spinner {
+  display: flex;
+  justify-content: center;
+  margin: 15px 0;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  margin: 0 5px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: dot-pulse 1.5s infinite ease-in-out;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 1s;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Scrollbar */
+#tubemate-chat .messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+#tubemate-chat .messages::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+}
+
+#tubemate-chat .messages::-webkit-scrollbar-thumb {
+  background: rgba(54, 209, 220, 0.4);
+  border-radius: 3px;
+}
