@@ -2,7 +2,7 @@ fastapi
 uvicorn
 pydantic
 flask-cors
-youtube-transcript-api
+#youtube-transcript-api
 langchain-community
 langchain-core
 tiktoken
@@ -15,3 +15,5 @@ huggingface-hub
 langdetect
 deep-translator
 nltk
+youtube-transcript-api>=0.6.1 # Specific version with proxy support
+requests==2.31.0
