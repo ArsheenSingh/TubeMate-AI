@@ -1,9 +1,9 @@
 import os
-from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled
-from youtube_transcript_api.proxies import WebshareProxyConfig
-import logging
-import requests
 import time
+import logging
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.proxies import WebshareProxyConfig
+from youtube_transcript_api._errors import TranscriptsDisabled
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -71,8 +71,11 @@ def get_transcript(video_id, max_retries=3):
             # Create API instance (with or without proxy)
             transcript_api = get_transcript_api()
             
-            # Try to get transcript
-            transcript_list = transcript_api.get_transcript(video_id)
+            # Try to get transcript with multiple language options
+            transcript_list = transcript_api.get_transcript(
+                video_id,
+                languages=["en","hi","sk","pa","en-GB","en-US","en-CA","en-AU","en-IN","en-NZ","en-IE","en-ZA","en-PH","en-MY","en-SG"]
+            )
             
             # Combine all transcript chunks
             full_transcript = " ".join(chunk["text"] for chunk in transcript_list)
