@@ -30,6 +30,8 @@ ENV WEBSHARE_PROXY_PASSWORD="nkmavgiwldpd"
 # Expose port
 EXPOSE 5000
 
+HEALTHCHECK --interval=30s --timeout=15s --start-period=10s \
+    CMD curl -f http://localhost:5000/health || exit 1
 # Command to run the application with increased timeout
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5000", "--timeout-keep-alive", "300"]
 

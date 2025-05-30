@@ -9,6 +9,7 @@ from yt_chat_rag_using_langchain import process_youtube_video
 from transcript_helper import get_transcript, test_proxy_functionality, verify_proxy_connection
 import uvicorn
 import time
+import requests
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -36,7 +37,7 @@ class QueryRequest(BaseModel):
 async def startup_event():
     """Test proxy configuration on startup"""
     logger.info("Starting TubeMate AI API...")
-    
+    await asyncio.sleep(5)  
     # Check if proxy credentials are available
     proxy_username = os.getenv('WEBSHARE_PROXY_USERNAME')
     proxy_password = os.getenv('WEBSHARE_PROXY_PASSWORD')
@@ -137,20 +138,49 @@ async def check_result(videoId: str, query: str):
 
 @app.get("/proxy_test")
 async def proxy_test():
-    """Endpoint to test proxy functionality"""
+    """Simplified proxy test endpoint"""
     try:
         proxy_working = verify_proxy_connection()
-        full_test = test_proxy_functionality()
-        
         return {
             "proxy_configured": proxy_working,
-            "youtube_access": full_test,
-            "message": "Check logs for detailed information"
+            "message": "Proxy test completed"
         }
     except Exception as e:
         return {
             "proxy_configured": False,
-            "youtube_access": False,
+            "error": str(e)
+        }
+
+# Add this endpoint
+@app.get("/test_connectivity")
+async def test_connectivity():
+    """Test external connectivity from container"""
+    try:
+        # Test direct connection
+        direct_response = requests.get('https://api.ipify.org?format=json', timeout=10)
+        direct_ip = direct_response.json().get('ip', 'Unknown')
+        
+        # Test proxy connection
+        proxy_username = os.getenv('WEBSHARE_PROXY_USERNAME')
+        proxy_password = os.getenv('WEBSHARE_PROXY_PASSWORD')
+        proxy_dict = {
+            'https': f'http://{proxy_username}:{proxy_password}@p.webshare.io:80'
+        }
+        proxy_response = requests.get('https://api.ipify.org?format=json', 
+                                    proxies=proxy_dict, 
+                                    timeout=30)
+        proxy_ip = proxy_response.json().get('ip', 'Unknown')
+        
+        return {
+            "direct_connection": True,
+            "direct_ip": direct_ip,
+            "proxy_connection": True,
+            "proxy_ip": proxy_ip
+        }
+    except Exception as e:
+        return {
+            "direct_connection": False,
+            "proxy_connection": False,
             "error": str(e)
         }
 

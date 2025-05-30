@@ -11,38 +11,36 @@ logger = logging.getLogger(__name__)
 def verify_proxy_connection():
     """Verify proxy connectivity before making API calls"""
     try:
-        # Get proxy credentials from environment variables
         proxy_username = os.getenv('WEBSHARE_PROXY_USERNAME')
         proxy_password = os.getenv('WEBSHARE_PROXY_PASSWORD')
         
         if not proxy_username or not proxy_password:
-            logger.error("Proxy credentials not found in environment variables")
+            logger.error("Proxy credentials not found")
             return False
             
-        # Test proxy with a simple request
         proxy_dict = {
             'http': f'http://{proxy_username}:{proxy_password}@p.webshare.io:80',
             'https': f'http://{proxy_username}:{proxy_password}@p.webshare.io:80'
         }
         
-        try:
-            response = requests.get('https://api.ipify.org?format=json', 
-                                  proxies=proxy_dict, 
-                                  timeout=10)
-            if response.status_code == 200:
-                logger.info(f"Proxy test successful. IP: {response.json().get('ip', 'Unknown')}")
-                return True
-            else:
-                logger.error(f"Proxy test failed with status code: {response.status_code}")
-                return False
-        except Exception as e:
-            logger.error(f"Proxy test request failed: {str(e)}")
-            return False
-            
-    except Exception as e:
-        logger.error(f"Proxy verification failed: {str(e)}")
+        # Test with multiple endpoints
+        test_urls = [
+            'https://api.ipify.org?format=json',
+            'https://www.google.com',
+            'https://ifconfig.me/all.json'
+        ]
+        
+        for url in test_urls:
+            try:
+                response = requests.get(url, proxies=proxy_dict, timeout=8)
+                if response.status_code == 200:
+                    logger.info(f"Proxy test successful with {url}")
+                    return True
+            except Exception:
+                continue
+    except Exception:
+        logger.error("All proxy test endpoints failed")
         return False
-
 def get_transcript_with_proxy(video_id, max_retries=3):
     """Get transcript using requests with proxy for better control"""
     
@@ -55,8 +53,8 @@ def get_transcript_with_proxy(video_id, max_retries=3):
     
     # Configure proxy
     proxy_dict = {
-        'http': f'http://{proxy_username}:{proxy_password}@p.webshare.io:80',
-        'https': f'http://{proxy_username}:{proxy_password}@p.webshare.io:80'
+    'http': f'http://{proxy_username}:{proxy_password}@p.webshare.io:80',
+    'https': f'https://{proxy_username}:{proxy_password}@p.webshare.io:80' 
     }
     
     for attempt in range(max_retries):
@@ -154,16 +152,18 @@ def get_transcript_direct(video_id, max_retries=3):
 
 def get_transcript(video_id, max_retries=3):
     """Main function to get transcript - tries proxy first, then direct"""
-    
-    # First try with proxy
-    result = get_transcript_with_proxy(video_id, max_retries)
-    
-    # If proxy fails and it's a blocking issue, try direct connection
-    if result.startswith("Error getting transcript: YouTube access blocked"):
-        logger.info("Proxy failed, trying direct connection as fallback...")
-        result = get_transcript_direct(video_id, max_retries)
-    
-    return result
+    try:
+        # First try with proxy
+        if verify_proxy_connection():
+            result = get_transcript_with_proxy(video_id, max_retries)
+        else:
+            logger.warning("Proxy verification failed, using direct connection")
+            result = get_transcript_direct(video_id, max_retries)
+            
+        return result
+    except Exception as e:
+        logger.error(f"Fallback to direct connection: {str(e)}")
+        return get_transcript_direct(video_id, max_retries)
 
 def test_proxy_functionality():
     """Test function to verify proxy is working with YouTube"""
