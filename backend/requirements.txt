@@ -1,19 +1,17 @@
 fastapi
 uvicorn
 pydantic
-flask-cors
-#youtube-transcript-api
+python-dotenv
+requests==2.31.0
+youtube-transcript-api>=0.6.1
 langchain-community
 langchain-core
-tiktoken
-faiss-cpu              
-python-dotenv
 langchain_groq
 langchain-huggingface
 transformers
 huggingface-hub
+tiktoken
+faiss-cpu
 langdetect
 deep-translator
 nltk
-youtube-transcript-api>=0.6.1 # Specific version with proxy support
-requests==2.31.0
