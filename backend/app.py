@@ -33,23 +33,76 @@ class QueryRequest(BaseModel):
     videoId: str
     query: str
 
+# Global flag to track initialization
+_app_initialized = False
+_initialization_error = None
+
 @app.on_event("startup")
 async def startup_event():
-    """Test proxy configuration on startup"""
-    logger.info("Starting TubeMate AI API...")
-    await asyncio.sleep(5)  
-    # Check if proxy credentials are available
-    proxy_username = os.getenv('WEBSHARE_PROXY_USERNAME')
-    proxy_password = os.getenv('WEBSHARE_PROXY_PASSWORD')
+    """Optimized startup with timeout and non-blocking proxy test"""
+    global _app_initialized, _initialization_error
     
-    if proxy_username and proxy_password:
-        logger.info("Proxy credentials found, testing proxy functionality...")
-        if test_proxy_functionality():
+    try:
+        logger.info("Starting TubeMate AI API...")
+        
+        # Mark as initialized immediately for health checks
+        _app_initialized = True
+        
+        # Check if proxy credentials are available (non-blocking)
+        proxy_username = os.getenv('WEBSHARE_PROXY_USERNAME')
+        proxy_password = os.getenv('WEBSHARE_PROXY_PASSWORD')
+        
+        if proxy_username and proxy_password:
+            logger.info("Proxy credentials found, testing proxy functionality in background...")
+            # Run proxy test in background, don't block startup
+            asyncio.create_task(background_proxy_test())
+        else:
+            logger.warning("⚠️ No proxy credentials found - running without proxy (may be blocked by YouTube)")
+            
+    except Exception as e:
+        logger.error(f"Startup error: {str(e)}")
+        _initialization_error = str(e)
+        # Still mark as initialized to allow health checks
+        _app_initialized = True
+
+async def background_proxy_test():
+    """Test proxy functionality in background without blocking startup"""
+    try:
+        # Add a small delay to not interfere with startup
+        await asyncio.sleep(2)
+        
+        # Test with a shorter timeout to avoid blocking
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, test_proxy_functionality_quick)
+        
+        if result:
             logger.info("✅ Proxy configuration is working correctly")
         else:
             logger.warning("⚠️ Proxy test failed - check your Webshare configuration")
-    else:
-        logger.warning("⚠️ No proxy credentials found - running without proxy (may be blocked by YouTube)")
+    except Exception as e:
+        logger.warning(f"Background proxy test failed: {str(e)}")
+
+def test_proxy_functionality_quick():
+    """Quick proxy test with shorter timeout"""
+    try:
+        proxy_username = os.getenv('WEBSHARE_PROXY_USERNAME')
+        proxy_password = os.getenv('WEBSHARE_PROXY_PASSWORD')
+        
+        if not proxy_username or not proxy_password:
+            return False
+            
+        proxy_dict = {
+            'http': f'http://{proxy_username}:{proxy_password}@p.webshare.io:80',
+            'https': f'http://{proxy_username}:{proxy_password}@p.webshare.io:80'
+        }
+        
+        # Quick test with short timeout
+        response = requests.get('https://api.ipify.org?format=json', 
+                              proxies=proxy_dict, 
+                              timeout=5)
+        return response.status_code == 200
+    except:
+        return False
 
 @app.post("/query")
 async def handle_query(request: QueryRequest, background_tasks: BackgroundTasks):
@@ -151,7 +204,6 @@ async def proxy_test():
             "error": str(e)
         }
 
-# Add this endpoint
 @app.get("/test_connectivity")
 async def test_connectivity():
     """Test external connectivity from container"""
@@ -186,8 +238,28 @@ async def test_connectivity():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "service": "TubeMate AI API"}
+    """Optimized health check endpoint"""
+    global _app_initialized, _initialization_error
+    
+    # Return healthy once basic initialization is complete
+    if _app_initialized:
+        status = {
+            "status": "healthy", 
+            "service": "TubeMate AI API",
+            "timestamp": time.time()
+        }
+        
+        if _initialization_error:
+            status["warning"] = _initialization_error
+            
+        return status
+    else:
+        raise HTTPException(status_code=503, detail="Service starting up")
+
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {"message": "TubeMate AI API is running", "version": "1.0"}
 
 if __name__ == '__main__':
     uvicorn.run("app:app", host="0.0.0.0", port=5000, reload=True)

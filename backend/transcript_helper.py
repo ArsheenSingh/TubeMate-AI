@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def verify_proxy_connection():
-    """Verify proxy connectivity before making API calls"""
+    """Verify proxy connectivity with shorter timeout"""
     try:
         proxy_username = os.getenv('WEBSHARE_PROXY_USERNAME')
         proxy_password = os.getenv('WEBSHARE_PROXY_PASSWORD')
@@ -23,25 +23,22 @@ def verify_proxy_connection():
             'https': f'http://{proxy_username}:{proxy_password}@p.webshare.io:80'
         }
         
-        # Test with multiple endpoints
-        test_urls = [
-            'https://api.ipify.org?format=json',
-            'https://www.google.com',
-            'https://ifconfig.me/all.json'
-        ]
-        
-        for url in test_urls:
-            try:
-                response = requests.get(url, proxies=proxy_dict, timeout=8)
-                if response.status_code == 200:
-                    logger.info(f"Proxy test successful with {url}")
-                    return True
-            except Exception:
-                continue
+        # Test with single endpoint and shorter timeout
+        try:
+            response = requests.get('https://api.ipify.org?format=json', 
+                                  proxies=proxy_dict, 
+                                  timeout=5)  # Reduced timeout
+            if response.status_code == 200:
+                logger.info(f"Proxy test successful")
+                return True
+        except Exception as e:
+            logger.warning(f"Proxy test failed: {str(e)}")
+            return False
     except Exception:
-        logger.error("All proxy test endpoints failed")
+        logger.error("Proxy verification failed")
         return False
-def get_transcript_with_proxy(video_id, max_retries=3):
+
+def get_transcript_with_proxy(video_id, max_retries=2):  # Reduced retries
     """Get transcript using requests with proxy for better control"""
     
     proxy_username = os.getenv('WEBSHARE_PROXY_USERNAME')
@@ -53,8 +50,8 @@ def get_transcript_with_proxy(video_id, max_retries=3):
     
     # Configure proxy
     proxy_dict = {
-    'http': f'http://{proxy_username}:{proxy_password}@p.webshare.io:80',
-    'https': f'https://{proxy_username}:{proxy_password}@p.webshare.io:80' 
+        'http': f'http://{proxy_username}:{proxy_password}@p.webshare.io:80',
+        'https': f'http://{proxy_username}:{proxy_password}@p.webshare.io:80' 
     }
     
     for attempt in range(max_retries):
@@ -92,8 +89,8 @@ def get_transcript_with_proxy(video_id, max_retries=3):
                 logger.warning(f"Attempt {attempt + 1} failed due to blocking/rate limiting: {str(e)}")
                 
                 if attempt < max_retries - 1:
-                    # Wait before retrying (exponential backoff)
-                    wait_time = (2 ** attempt) * 3  # 3, 6, 12 seconds
+                    # Wait before retrying (shorter wait time)
+                    wait_time = (2 ** attempt) * 2  # 2, 4 seconds
                     logger.info(f"Waiting {wait_time} seconds before retry...")
                     time.sleep(wait_time)
                     continue
@@ -106,7 +103,7 @@ def get_transcript_with_proxy(video_id, max_retries=3):
     
     return "Error getting transcript: Maximum retries exceeded"
 
-def get_transcript_direct(video_id, max_retries=3):
+def get_transcript_direct(video_id, max_retries=2):  # Reduced retries
     """Fallback method to get transcript without proxy"""
     
     for attempt in range(max_retries):
@@ -138,7 +135,7 @@ def get_transcript_direct(video_id, max_retries=3):
                 logger.warning(f"Direct attempt {attempt + 1} failed: {str(e)}")
                 
                 if attempt < max_retries - 1:
-                    wait_time = (2 ** attempt) * 2
+                    wait_time = (2 ** attempt) * 1  # 1, 2 seconds
                     logger.info(f"Waiting {wait_time} seconds before retry...")
                     time.sleep(wait_time)
                     continue
@@ -150,10 +147,10 @@ def get_transcript_direct(video_id, max_retries=3):
     
     return "Error getting transcript: Maximum retries exceeded"
 
-def get_transcript(video_id, max_retries=3):
+def get_transcript(video_id, max_retries=2):
     """Main function to get transcript - tries proxy first, then direct"""
     try:
-        # First try with proxy
+        # Quick proxy verification with short timeout
         if verify_proxy_connection():
             result = get_transcript_with_proxy(video_id, max_retries)
         else:
@@ -166,22 +163,26 @@ def get_transcript(video_id, max_retries=3):
         return get_transcript_direct(video_id, max_retries)
 
 def test_proxy_functionality():
-    """Test function to verify proxy is working with YouTube"""
+    """Test function to verify proxy is working with YouTube - with timeout"""
     test_video_id = "dQw4w9WgXcQ"  # Rick Roll - commonly available video
     
     logger.info("Testing proxy functionality with sample video...")
     
-    # First test proxy connection
+    # First test proxy connection with short timeout
     if not verify_proxy_connection():
         logger.error("Proxy connection test failed")
         return False
     
-    # Then test actual transcript retrieval
-    result = get_transcript(test_video_id)
-    
-    if result.startswith("Error") or result.startswith("No"):
-        logger.error(f"Proxy test failed: {result}")
+    # Then test actual transcript retrieval with timeout
+    try:
+        result = get_transcript(test_video_id)
+        
+        if result.startswith("Error") or result.startswith("No"):
+            logger.error(f"Proxy test failed: {result}")
+            return False
+        else:
+            logger.info("Proxy test successful!")
+            return True
+    except Exception as e:
+        logger.error(f"Proxy test exception: {str(e)}")
         return False
-    else:
-        logger.info("Proxy test successful!")
-        return True
