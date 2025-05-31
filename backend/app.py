@@ -4,20 +4,19 @@ from pydantic import BaseModel
 import logging
 import asyncio
 import os
-# Import both the get_transcript function and process_youtube_video from yt_chat_rag_using_langchain
 from yt_chat_rag_using_langchain import process_youtube_video
 from transcript_helper import get_transcript, test_proxy_functionality, verify_proxy_connection
 import uvicorn
 import time
 import requests
 
-# Configure logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="TubeMate AI API")
 
-# Adding CORS middleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -26,14 +25,13 @@ app.add_middleware(
     allow_headers=["*"],  
 )
 
-# Global cache for processed transcripts
+
 video_cache = {}
 
 class QueryRequest(BaseModel):
     videoId: str
     query: str
 
-# Global flag to track initialization
 _app_initialized = False
 _initialization_error = None
 
@@ -45,16 +43,15 @@ async def startup_event():
     try:
         logger.info("Starting TubeMate AI API...")
         
-        # Mark as initialized immediately for health checks
         _app_initialized = True
         
-        # Check if proxy credentials are available (non-blocking)
+        
         proxy_username = os.getenv('WEBSHARE_PROXY_USERNAME')
         proxy_password = os.getenv('WEBSHARE_PROXY_PASSWORD')
         
         if proxy_username and proxy_password:
             logger.info("Proxy credentials found, testing proxy functionality in background...")
-            # Run proxy test in background, don't block startup
+            
             asyncio.create_task(background_proxy_test())
         else:
             logger.warning("⚠️ No proxy credentials found - running without proxy (may be blocked by YouTube)")
@@ -62,16 +59,15 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Startup error: {str(e)}")
         _initialization_error = str(e)
-        # Still mark as initialized to allow health checks
         _app_initialized = True
 
 async def background_proxy_test():
     """Test proxy functionality in background without blocking startup"""
     try:
-        # Add a small delay to not interfere with startup
+        
         await asyncio.sleep(2)
         
-        # Test with a shorter timeout to avoid blocking
+        
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(None, test_proxy_functionality_quick)
         
@@ -96,7 +92,7 @@ def test_proxy_functionality_quick():
             'https': f'http://{proxy_username}:{proxy_password}@p.webshare.io:80'
         }
         
-        # Quick test with short timeout
+        
         response = requests.get('https://api.ipify.org?format=json', 
                               proxies=proxy_dict, 
                               timeout=5)
@@ -113,7 +109,7 @@ async def handle_query(request: QueryRequest, background_tasks: BackgroundTasks)
         raise HTTPException(status_code=400, detail="videoId and query required")
     
     try:
-        # Check if we've already processed this video
+        
         if vid in video_cache:
             logger.info(f"Using cached transcript for video ID: {vid}")
             transcript = video_cache[vid]
@@ -121,29 +117,29 @@ async def handle_query(request: QueryRequest, background_tasks: BackgroundTasks)
             logger.info(f"Retrieving transcript for video ID: {vid}")
             transcript = get_transcript(vid)
             
-            # Cache successful transcripts
+            
             if isinstance(transcript, str) and not (transcript.startswith("Error") or transcript.startswith("No")):
                 video_cache[vid] = transcript
         
         logger.info(f"Retrieved transcript length: {len(transcript) if isinstance(transcript, str) else 'N/A'}")
         
-        # Check if transcript is an error message
+        
         if isinstance(transcript, str) and (transcript.startswith("Error") or transcript.startswith("No")):
             logger.warning(f"Transcript issue: {transcript}")
             return {"answer": f"I couldn't analyze this video: {transcript}"}
         
-        # For long transcripts, add message about potential delay
+        
         if isinstance(transcript, str) and len(transcript) > 15000:
             task_key = f"{vid}:{q}"
             
-            # Process in background for long videos
+            
             background_tasks.add_task(process_long_video, transcript, q, vid)
             
             return {
                 "answer": "I'm analyzing this long video (it may take a minute). Please ask your question again in about 15 seconds for a complete response."
             }
             
-        # Process the video and get the answer for shorter videos
+        
         logger.info(f"Processing query: {q}")
         resp = process_youtube_video(transcript, q)
         return {"answer": resp}
@@ -152,7 +148,7 @@ async def handle_query(request: QueryRequest, background_tasks: BackgroundTasks)
         logger.error(f"Error processing request: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-# Cache for background processing results
+
 results_cache = {}
 
 async def process_long_video(transcript, query, video_id):
@@ -162,7 +158,7 @@ async def process_long_video(transcript, query, video_id):
         start_time = time.time()
         result = process_youtube_video(transcript, query)
         
-        # Cache the result
+        
         cache_key = f"{video_id}:{query}"
         results_cache[cache_key] = {
             "result": result,
@@ -182,7 +178,7 @@ async def check_result(videoId: str, query: str):
     if cache_key in results_cache:
         cached_data = results_cache[cache_key]
         
-        # Check if result is still fresh (5 minutes)
+        
         if time.time() - cached_data["timestamp"] < 300:
             result = cached_data["result"]
             return {"found": True, "answer": result}
@@ -208,11 +204,11 @@ async def proxy_test():
 async def test_connectivity():
     """Test external connectivity from container"""
     try:
-        # Test direct connection
+        
         direct_response = requests.get('https://api.ipify.org?format=json', timeout=10)
         direct_ip = direct_response.json().get('ip', 'Unknown')
         
-        # Test proxy connection
+        
         proxy_username = os.getenv('WEBSHARE_PROXY_USERNAME')
         proxy_password = os.getenv('WEBSHARE_PROXY_PASSWORD')
         proxy_dict = {
@@ -241,7 +237,7 @@ async def health_check():
     """Optimized health check endpoint"""
     global _app_initialized, _initialization_error
     
-    # Return healthy once basic initialization is complete
+    
     if _app_initialized:
         status = {
             "status": "healthy", 
